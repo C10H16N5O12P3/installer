@@ -42,23 +42,14 @@ ReleaseInfo::ReleaseInfo(QJsonObject const& obj)
     }
 }
 
-QString getInstallationPath(QString tag, bool createDir)
+QString getInstallationPath(QString tag)
 {
-    QString path = QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DataLocation) + "/" + tag;
-
-    if (createDir)
-    {
-        QDir dir(path);
-        if (!dir.exists())
-            dir.mkdir(path);
-    }
-
-    return path;
+    return QStandardPaths::writableLocation(QStandardPaths::StandardLocation::DataLocation) + "/" + tag;
 }
 
 QString getExecPath(QString tag)
 {
-    return getInstallationPath(tag, false) + "/" EXEC_FILE;
+    return getInstallationPath(tag) + "/" EXEC_FILE;
 }
 
 bool isVersionInstalled(QString tag)
@@ -192,7 +183,7 @@ void MainWindow::onDownloadBtnClick()
 
     if (isVersionInstalled(release.tagName))
     {
-        auto instPath = getInstallationPath(release.tagName, false);
+        auto instPath = getInstallationPath(release.tagName);
 
         QDir dir(instPath);
         dir.removeRecursively();
@@ -203,19 +194,19 @@ void MainWindow::onDownloadBtnClick()
     { 
         startDownload(release.getCurrentOsUrl(), [this, release] (QNetworkReply* reply)
         {
-            QString instPath = getInstallationPath(release.tagName, true);
+            QString instPath = getInstallationPath(release.tagName);
             QString execPath = getExecPath(release.tagName);
 
             // create persisent directory
-            auto data = reply->readAll();
             QDir dir(instPath);
             if (!dir.exists())
-                dir.mkdir(instPath);
+                dir.mkpath(instPath);
 
 
             // create zip file
             zip_error_t err;
 
+            auto data = reply->readAll();
             zip_source_t* src = zip_source_buffer_create(data.data(), data.size(), 0, &err);
             zip_t* zipFile = zip_open_from_source(src, ZIP_RDONLY, &err);
 

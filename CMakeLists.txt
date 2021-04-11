@@ -31,6 +31,7 @@ find_package(Qt5Network REQUIRED)
 set(TS_FILES ${PROJECT_NAME}_fr_FR.ts)
 
 set(PROJECT_SOURCES
+        3rdParty/zip.cpp
         main.cpp
         mainwindow.cpp
         mainwindow.h
@@ -59,4 +60,4 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE zip Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network)

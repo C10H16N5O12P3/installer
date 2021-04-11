@@ -6,7 +6,7 @@
 #include <QFile>
 #include <QDir>
 #include <QProcess>
-#include <zip.h>
+#include "3rdParty/zip.h"
 
 #define RELEASES_URL    "https://api.github.com/repos/C10H16N5O12P3/BeyondStyx-release/releases"
 #ifdef Q_OS_WINDOWS
@@ -202,56 +202,50 @@ void MainWindow::onDownloadBtnClick()
             if (!dir.exists())
                 dir.mkpath(instPath);
 
-
-            // create zip file
-            zip_error_t err;
-
             auto data = reply->readAll();
-            zip_source_t* src = zip_source_buffer_create(data.data(), data.size(), 0, &err);
-            zip_t* zipFile = zip_open_from_source(src, ZIP_RDONLY, &err);
 
-            struct zip_stat stat;
-            zip_int64_t count = zip_get_num_entries(zipFile, 0);
 
+            zip_t* zip = zip_stream_open(data.data(), data.size(), ZIP_DEFAULT_COMPRESSION_LEVEL, 'r');
+
+            int count = zip_entries_total(zip);
             ui->progressBar->setMaximum(count);
+            
+            char* buf = NULL;
+            size_t bufsize = 0;
 
-            for (zip_int64_t i = 0; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
+                zip_entry_openbyindex(zip, i);
+
                 ui->progressBar->setValue(i);
 
-                // get file info
-                zip_stat_init(&stat);
-                zip_stat_index(zipFile, i, 0, &stat);
+                if (!zip_entry_isdir(zip))
+                {
+                    const char* fileName = zip_entry_name(zip);
 
-                // create directory
-                ssize_t pathLen = strlen(stat.name);
-                for (ssize_t i = pathLen - 1; i >= 0; i--)
-                    if (stat.name[i] == '/'){
-                        dir.mkpath(QString(stat.name).left(i));
-                        break;
-                    }
+                    // create directory
+                    ssize_t pathLen = strlen(fileName);
+                    for (ssize_t i = pathLen - 1; i >= 0; i--)
+                        if (fileName[i] == '/'){
+                            dir.mkpath(QString(fileName).left(i));
+                            break;
+                        }
 
-                // check if directory
-                if (stat.name[pathLen-1] == '/')
-                    continue;
+                    
+                    zip_entry_read(zip, reinterpret_cast<void**>(&buf), &bufsize);
 
+                    // write the decompressed file
+                    QFile file(instPath + "/" + fileName);
+                    file.open(QIODevice::WriteOnly);
+                    file.write(buf, bufsize);
+                    file.close();
+                }
 
-                char* data = new char[stat.size];
-
-                zip_file_t* entry = zip_fopen_index(zipFile, i, 0);
-                zip_fread(entry, data, stat.size);
-
-                // write the decompressed file
-                QFile file(instPath + "/" + stat.name);
-                file.open(QIODevice::WriteOnly);
-                file.write(data, stat.size);
-                file.close();
-
-                zip_fclose(entry);
-
-                delete[] data;
+                zip_entry_close(zip);
             }
-
+            
+            zip_close(zip);
+            
             // set exec permission
             auto oldPerm = QFile::permissions(execPath);
             QFile::setPermissions(execPath, oldPerm | QFileDevice::Permission::ExeUser);

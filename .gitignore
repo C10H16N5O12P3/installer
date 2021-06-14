@@ -8,6 +8,7 @@
 *.so
 *.so.*
 *.dll
+*.exe
 *.dylib
 
 # Qt-es
@@ -53,4 +54,5 @@ compile_commands.json
 
 .xdp*
 build
+out
 .vscode

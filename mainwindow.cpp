@@ -58,6 +58,15 @@ bool isVersionInstalled(QString tag)
     return file.exists();
 }
 
+void MainWindow::sslError(QNetworkReply* reply, const QList<QSslError> &errors)
+{
+    qDebug() << "error";
+    foreach (auto& err, errors)
+    {
+        qDebug() << err;
+    }
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -65,6 +74,9 @@ MainWindow::MainWindow(QWidget *parent) :
     m_Releases(),
     m_ReleaseFiltered()
 {
+    
+    connect(m_NetworkMgr, &QNetworkAccessManager::sslErrors, this, &MainWindow::sslError);
+
     ui->setupUi(this);
 
     ui->progressBar->setVisible(false);
@@ -72,6 +84,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->playBtn->setVisible(false);
 
+    /*
+    qDebug() << QSslSocket::sslLibraryBuildVersionString();
+    qDebug() << QSslSocket::supportsSsl();
+    qDebug() << QSslSocket::sslLibraryVersionString();
+    */
+
+    this->setWindowFlags(this->windowFlags() | Qt::MSWindowsFixedSizeDialogHint);
+    this->setMinimumSize(QSize(width(), height()));
+    this->setMaximumSize(QSize(width(), height()));
 
     fetchVersions();
 }

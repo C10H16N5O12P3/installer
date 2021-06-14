@@ -67,6 +67,7 @@ private:
     ReleaseInfo const& getSelectedRelease();
 
 public slots:
+    void sslError(QNetworkReply* reply, const QList<QSslError> &errors);
     void onDownloadBtnClick();
     void onRefreshBtnClick();
     void onPlayBtnClick();
